@@ -1,5 +1,11 @@
-class Partible:
+from .db import SillyDB
 
-    class Part:
-        def __init__(self, ):
-    def __init__(self):
+
+class SillyDataSection:
+    __db: SillyDB
+
+    def _session(self):
+        return self.__db.session()
+
+    def __init__(self, db: SillyDB):
+        self.__db = db

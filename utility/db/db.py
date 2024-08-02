@@ -8,7 +8,7 @@ from aiogram.types import User as AiogramUser
 from utility import Singleton
 
 SQL_LITE_PATH_TEMPLATE = 'sqlite:///{}'
-RELATIVE_DB_PATH = "data\\{}.partible"
+RELATIVE_DB_PATH = "data\\{}.db"
 
 
 class SillyDB(metaclass=Singleton):

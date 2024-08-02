@@ -1,12 +1,22 @@
 from datetime import datetime
-from .user import User
+from .data import UserInfo
 
 
 class Event:
     _time: datetime
-    _user: User
+    _user_info:  UserInfo
+    _args: tuple
 
-    def __init__(self, user_identifier: int, time: datetime):
+    @property
+    def time(self) -> datetime:
+        return self._time
+
+    @property
+    def args(self) -> tuple:
+        return self._args
+
+    def __init__(self, user: UserInfo, time: datetime, *args):
         self._time = time
-        self._user = User(user_identifier)
+        self._user_info = user
+        self._args = args
 
