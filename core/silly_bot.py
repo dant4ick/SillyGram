@@ -7,6 +7,11 @@ from aiogram.types import Message, CallbackQuery
 from .management import Event, Manager
 from .management.data import Data
 
+from .ui import Button
+from .ui import Page
+
+from typing import *
+
 DEFAULT_PARSE_MODE = "HTML"
 DEFAULT_BOT_PROPERTIES = DefaultBotProperties(parse_mode=DEFAULT_PARSE_MODE)
 
@@ -18,18 +23,23 @@ class SillyBot:
     _router_for_default_handler: Router
     _data: Data
 
+    _pages: Dict[Any, Page]
+
     _manager: Manager
 
-    def __init__(self, token: str):
+    def __init__(self, token: str, *pages: Page):
         """
         :param token: Telegram-API token received from BotFather.
+        :param pages: Page objects to include. Names must be unique.
         """
-        self._data = Data()
+
+        self._data = Data(*pages)
         self._bot = Bot(token=token, default=DEFAULT_BOT_PROPERTIES)
-        self._dispatcher.startup.register(self._on_startup)
+        self._dispatcher.startup.register(SillyBot._on_startup)
         self._manager = Manager(self._bot, self._data)
 
-    async def _on_startup(self):
+    @staticmethod
+    async def _on_startup():
         print("SillyBot is polling...")
 
     def launch_async(self):
@@ -85,6 +95,9 @@ class SillyBot:
         return decorator
 
     def _on_callback(self, callback_identity: str):
+        ...
+
+    def page(self, home_page=False, start_page=False):
         ...
 
     def track(self, key: str):

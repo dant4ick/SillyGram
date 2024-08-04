@@ -19,7 +19,7 @@ class Row(Aiogramable):
         return result
 
     @property
-    def buttons(self):
+    def buttons(self) -> tuple:
         return self._buttons
 
     def aiogramify(self) -> list:

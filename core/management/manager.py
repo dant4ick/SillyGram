@@ -4,6 +4,8 @@ from aiogram.types import InlineKeyboardMarkup, Message as AiogramMessage
 from core.management.data.user_info import UserInfo
 from .data import Data
 
+from typing import *
+
 
 class Manager:
     _aiogram_bot: AiogramBot
@@ -24,7 +26,7 @@ class Manager:
     def get_user_info(self, user_id: int) -> UserInfo:
         return self._data.users.get_info(user_id)
 
-    async def goto_page(self, page, user_id: int):
+    async def goto_page(self, page_name: Any, user_id: int):
         ...
 
     async def send_notification(self, text: str, user_id: int):
@@ -42,10 +44,7 @@ class Manager:
     async def send_broadcast(self, text: str, user_ids: list[int]):
         ...
 
-    async def reset_tracker(self):
-        self._data.tracker.reset()
-
-    async def _show_in_target_message(self, user_id: int, text: str, keyboard: InlineKeyboardMarkup):
+    async def _edit_target_message(self, user_id: int, text: str, keyboard: InlineKeyboardMarkup):
         target_message_id = self._data.users.get_target_message_id(user_id)
 
         if target_message_id is not None:
