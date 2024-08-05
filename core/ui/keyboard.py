@@ -1,29 +1,23 @@
-from typing import Tuple
+from typing import Sequence
 
 from .aiogramable import Aiogramable
 from aiogram.types import InlineKeyboardMarkup
+from .button import Button
 
 
 class Keyboard(Aiogramable):
-    _rows: tuple
+    _buttons: Sequence[Sequence[Button]]
 
-    def __init__(self, *rows):
-        self._rows = rows
+    def __init__(self, *buttons: Sequence[Button]) -> None:
+        self._buttons = buttons
 
     def aiogramify(self) -> InlineKeyboardMarkup:
-        buttons = [row.aiogramify() for row in self._rows]
-        return InlineKeyboardMarkup(inline_keyboard=buttons)
+        return InlineKeyboardMarkup(
+            inline_keyboard=[[button.aiogramify() for button in row] for row in self._buttons]
+        )
 
     @property
-    def buttons(self) -> Tuple:
-        return tuple(*row.buttons for row in self._rows)
-
-    @property
-    def rows(self) -> Tuple:
-        return self._rows
-
-
-
-
+    def buttons(self) -> Sequence[Button]:
+        return tuple(button for row in self._buttons for button in row)
 
 

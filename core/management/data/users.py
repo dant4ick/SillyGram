@@ -6,13 +6,13 @@ from .user_info import UserInfo
 class Users(SillyDataSection):
 
     def indicate(self, aiogram_user: AiogramUser) -> UserInfo:
-        ...
+        return UserInfo(aiogram_user.id)
 
     def get_info(self, user_id: int) -> UserInfo | None:
         ...
 
     def get_target_message_id(self, user_id: int) -> int | None:
-        ...
+        return None
 
     def set_target_message_id(self, user_id: int, message_id: int):
         ...

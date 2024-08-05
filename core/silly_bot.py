@@ -1,4 +1,6 @@
 import asyncio
+from typing import *
+
 from aiogram import Bot, Dispatcher, Router, F
 from aiogram.client.default import DefaultBotProperties
 from aiogram.filters import Command
@@ -6,11 +8,7 @@ from aiogram.types import Message, CallbackQuery
 
 from .management import Event, Manager
 from .management.data import Data
-
-from .ui import Button
 from .ui import Page
-
-from typing import *
 
 DEFAULT_PARSE_MODE = "HTML"
 DEFAULT_BOT_PROPERTIES = DefaultBotProperties(parse_mode=DEFAULT_PARSE_MODE)
@@ -19,24 +17,12 @@ DEFAULT_BOT_PROPERTIES = DefaultBotProperties(parse_mode=DEFAULT_PARSE_MODE)
 class SillyBot:
     _bot: Bot
     _dispatcher: Dispatcher = Dispatcher()
-
     _router_for_default_handler: Router
+
     _data: Data
-
-    _pages: Dict[Any, Page]
-
     _manager: Manager
-
-    def __init__(self, token: str, *pages: Page):
-        """
-        :param token: Telegram-API token received from BotFather.
-        :param pages: Page objects to include. Names must be unique.
-        """
-
-        self._data = Data(*pages)
-        self._bot = Bot(token=token, default=DEFAULT_BOT_PROPERTIES)
-        self._dispatcher.startup.register(SillyBot._on_startup)
-        self._manager = Manager(self._bot, self._data)
+    
+    # region Starting
 
     @staticmethod
     async def _on_startup():
@@ -64,42 +50,78 @@ class SillyBot:
 
         await self._dispatcher.start_polling(self._bot, skip_updates=True)
 
-    def _on_command(self, command_text: str):
-        """
-        A decorator to mark command handlers.
+    # endregion
 
-        The /start and /continue commands are reserved by SillyGram,
-        so use on_start and on_continue decorators to redefine them.
+    # region Events handlers
 
-        SillyGram is meant to design bots that only use inline keyboards, therefore this method is protected
-        and SillyGram bots are not allowed to define any more commands.
+    def _setup_handlers(self):
+        if self._data.pages.home_page_name is not None:
+            self._register_command("home", self._on_home)
 
-        :param command_text: e.g. "start" for a /start command
-        """
-        def decorator(silly_handler):
-            @self._dispatcher.message(Command(command_text))
-            async def aiogram_handler(message: Message):
-                try:
-                    await message.delete()
-                except Exception:
-                    ...
+        if self._data.pages.start_page_name is not None:
+            self._register_command("start", self._on_start)
 
-                user_info = self._data.users.indicate(message.from_user)
+        pages = (self._data.pages.get(name) for name in self._data.pages.names)
+        buttons = []
+        for page in pages:
+            for button in page.keyboard.buttons:
+                if button not in buttons:
+                    buttons.append(button)
 
-                args = message.text.split()[1:]
-                event = Event(user_info, message.date, *args)
-                return await silly_handler(self._manager, event)
+        for button in buttons:
+            self._register_callback(button.identity, button.on_click)
 
-            return aiogram_handler
+    def _register_command(self, command: str, handler: Any):
+        async def aiogram_handler(message: Message):
+            try:
+                await message.delete()
+            except Exception:
+                ...
 
-        return decorator
+            user_info = self._data.users.indicate(message.from_user)
 
-    def _on_callback(self, callback_identity: str):
-        ...
+            args = message.text.split()[1:]
+            event = Event(user_info, *args)
+            return await handler(self._manager, event)
 
-    def page(self, home_page=False, start_page=False):
-        ...
+        self._dispatcher.message.register(aiogram_handler, Command(command))
+
+    def _register_callback(self, callback_identity: str, handler: Any):
+        async def aiogram_handler(callback: CallbackQuery):
+            user_info = self._data.users.indicate(callback.from_user)
+            event = Event(user_info)
+            return await handler(self._manager, event)
+
+        self._dispatcher.callback_query.register(aiogram_handler, F.data.startswith(callback_identity))
+
+    # region Default handlers
+
+    async def _on_start(self, manager: Manager, event: Event):
+        await manager.goto_page_detached(self._data.pages.start_page_name, event.user.id)
+
+    async def _on_home(self, manager: Manager, event: Event):
+        await manager.goto_page_detached(self._data.pages.home_page_name, event.user.id)
+
+    # endregion
+
+    # endregion
+
+    # region Decorators
 
     def track(self, key: str):
         return self._data.tracker.track(key)
 
+    # endregion
+
+    def __init__(self, token: str, *pages: Page):
+        """
+        :param token: Telegram-API token received from BotFather.
+        :param pages: Page objects to include. Names must be unique.
+        """
+
+        self._data = Data(*pages)
+        self._bot = Bot(token=token, default=DEFAULT_BOT_PROPERTIES)
+        self._dispatcher.startup.register(SillyBot._on_startup)
+        self._manager = Manager(self._bot, self._data)
+
+        self._setup_handlers()
